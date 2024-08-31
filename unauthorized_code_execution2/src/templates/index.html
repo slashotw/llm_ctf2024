@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學幫手😎</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <style>
+        .shadow-custom {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        #response pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+        #response code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-custom w-full max-w-2xl">
+        <h1 class="text-2xl font-bold mb-4">數學幫手😎</h1>
+        <textarea id="prompt" class="w-full p-2 border rounded mb-4" rows="4" placeholder="Enter your algorithm question here..."></textarea>
+        <button id="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200">Submit</button>
+        <div id="loading" class="hidden mt-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+        <div id="response" class="mt-4 prose"></div>
+    </div>
+
+    <script>
+        const promptInput = document.getElementById('prompt');
+        const submitButton = document.getElementById('submit');
+        const loadingDiv = document.getElementById('loading');
+        const responseDiv = document.getElementById('response');
+
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+
+        submitButton.addEventListener('click', async () => {
+            const prompt = promptInput.value;
+            if (prompt.length > 200) {
+                alert('Prompt is too long. Please keep it under 200 characters.');
+                return;
+            }
+
+            loadingDiv.classList.remove('hidden');
+            responseDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.innerHTML = marked.parse(data.response);
+                    hljs.highlightAll();
+                } else {
+                    responseDiv.textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Store with GPT Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .product {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .product:hover {
+            transform: translateY(-5px);
+        }
+        .product img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .chat-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .chat-window {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 400px;
+            height: 500px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .chat-input {
+            display: flex;
+            padding: 10px;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>貓貓線上商品專櫃</h1>
+        <p>歡迎透過右下角AI助手詢問商品問題！</p>
+        <div class="products" id="products"></div>
+    </div>
+    
+    <button class="chat-button" onclick="toggleChat()">💬</button>
+    
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="loading" id="loading">Loading...</div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Ask about our products...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function loadProducts() {
+            fetch('/products')
+                .then(response => response.json())
+                .then(products => {
+                    const productsContainer = document.getElementById('products');
+                    products.forEach(product => {
+                        const productElement = document.createElement('div');
+                        productElement.className = 'product';
+                        productElement.innerHTML = `
+                            <img src="../static/${product.image_url}" alt="${product.name}">
+                            <h3>${product.name}</h3>
+                            <p>Price: $${product.price.toFixed(2)}</p>
+                            <p>${product.description}</p>
+                        `;
+                        productsContainer.appendChild(productElement);
+                    });
+                });
+        }
+
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const loading = document.getElementById('loading');
+
+            if (userInput.value.trim() === '') return;
+
+            chatMessages.innerHTML += `<p><strong>You:</strong> ${userInput.value}</p>`;
+            loading.style.display = 'block';
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: userInput.value }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    chatMessages.innerHTML += `<p><strong>Assistant:</strong> ${data.response}</p>`;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    chatMessages.innerHTML += `<p><strong>Error:</strong> ${error}</p>`;
+                });
+
+            userInput.value = '';
+        }
+
+        loadProducts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recipe Expert</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7f7f7;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h2 {
+            color: #4caf50;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .reply {
+            margin-top: 30px;
+            font-size: 18px;
+            color: #555;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AI 食譜大師 🍰</h2>
+        <p>輸入一個食物名稱 讓AI告訴你食譜！ ex: 香蕉蛋糕 </p>
+        <input type="text" id="userMessage" placeholder="Ask about a recipe...">
+        <button onclick="askRecipe()">製作食譜！</button>
+        <div class="loading" id="loading">加載食譜中...</div>
+        <div class="reply" id="reply"></div>
+    </div>
+
+    <script>
+        async function askRecipe() {
+            const message = document.getElementById('userMessage').value;
+            const loadingElement = document.getElementById('loading');
+            const replyElement = document.getElementById('reply');
+
+            loadingElement.style.display = 'block';
+            replyElement.innerHTML = '';
+
+            try {
+                const response = await fetch('/ask_recipe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                loadingElement.style.display = 'none';
+                if (data.error) {
+                    replyElement.innerHTML = `Error: ${data.error}`;
+                } else {
+                    replyElement.innerHTML = data.reply;
+                }
+            } catch (error) {
+                loadingElement.style.display = 'none';
+                replyElement.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

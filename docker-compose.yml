@@ -1,0 +1,55 @@
+version: "3"
+
+x-common-variables: &common-variables
+  API_KEY: put your API_KEY here
+
+services:
+  prompt_injection:
+    build:
+      context: prompt_injection
+      dockerfile: Dockerfile 
+    restart: always
+    container_name: prompt_injection #容器名稱
+    ports:
+      - 9101:80
+    environment: *common-variables
+
+  prompt_injection2:
+    build:
+      context: prompt_injection2
+      dockerfile: Dockerfile 
+    restart: always
+    container_name: prompt_injection2 #容器名稱
+    ports:
+      - 9102:80
+    environment: *common-variables
+
+  excessive_agency:
+    build:
+      context: excessive_agency
+      dockerfile: Dockerfile 
+    restart: always
+    container_name: excessive_agency #容器名稱
+    ports:
+      - 9103:80
+    environment: *common-variables
+
+  unauthorized_code_execution:
+    build:
+      context: unauthorized_code_execution
+      dockerfile: Dockerfile 
+    restart: always
+    container_name: unauthorized_code_execution #容器名稱
+    ports:
+      - 9104:80
+    environment: *common-variables
+
+  unauthorized_code_execution2:
+    build:
+      context: unauthorized_code_execution2
+      dockerfile: Dockerfile 
+    restart: always
+    container_name: unauthorized_code_execution2 #容器名稱
+    ports:
+      - 9105:80
+    environment: *common-variables

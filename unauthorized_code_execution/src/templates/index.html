@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Markdown 文章翻譯</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #fff;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .header {
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .toolbar label {
+            font-size: 14px;
+            color: #333;
+        }
+        .toolbar select, .toolbar button {
+            background-color: #f0f0f0;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .editor-container, .preview-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .editor-container {
+            border-right: 1px solid #444;
+            background-color: #272822;
+        }
+        .CodeMirror {
+            height: 100%;
+            font-size: 16px;
+            background-color: #272822;
+        }
+        #preview {
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+        .loading {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background-color: rgba(52, 152, 219, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            max-width: 500px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 5px;
+        }
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">AI Markdown 文章翻譯</div>
+            <div class="toolbar">
+                <label for="lang">目標翻譯語言：</label>
+                <select id="lang">
+                    <option value="Russian">Russian</option>
+                    <option value="Deutsch">Deutsch</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                </select>
+                <button id="translateBtn">翻譯</button>
+                <button id="new-btn">新建</button>
+                <button id="intro-btn">介紹</button>
+            </div>
+        </header>
+        <main class="content">
+            <div class="editor-container">
+                <textarea id="editor"></textarea>
+            </div>
+            <div class="preview-container">
+                <div id="preview"></div>
+            </div>
+        </main>
+        <div class="loading" id="loading">正在翻譯...</div>
+    </div>
+
+    <div id="introModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>關於 AI Markdown 文章翻譯</h2>
+            <p>這是一個強大的 AI 驅動的 Markdown 翻譯工具，具有以下特點：</p>
+            <ul>
+                <li>智能翻譯：使用先進的 AI 模型進行翻譯</li>
+                <li>保留格式：翻譯後保留原始 Markdown 格式</li>
+                <li>多語言支持：支持多種語言之間的翻譯</li>
+                <li>即時預覽：左側編輯，右側預覽翻譯結果</li>
+                <li>簡潔美觀的界面設計</li>
+            </ul>
+            <p>開始使用吧，體驗 AI 翻譯帶來的便利！</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js"></script>
+    <script>
+        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'markdown',
+            theme: 'monokai',
+            lineNumbers: true,
+            lineWrapping: true
+        });
+
+        editor.setValue('# 歡迎使用 AI Markdown 文章翻譯\n\n在此輸入你的 Markdown 內容...');
+
+        const preview = document.getElementById('preview');
+        const loading = document.getElementById('loading');
+        const translateBtn = document.getElementById('translateBtn');
+
+        async function translate() {
+            const markdown = editor.getValue();
+            const lang = document.getElementById('lang').value;
+
+            if (markdown.length > 200) {
+                alert('輸入超過200個字符限制！');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: markdown, target_lang: lang }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    preview.innerHTML = data.translated;
+                } else {
+                    preview.innerHTML = `錯誤：${data.error}`;
+                }
+            } catch (error) {
+                preview.innerHTML = `錯誤：${error.message}`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        translateBtn.addEventListener('click', translate);
+
+        // 新增文件按鈕功能
+        document.getElementById('new-btn').addEventListener('click', () => {
+            editor.setValue('');
+            preview.innerHTML = '';
+        });
+
+        // 介紹模態框
+        const modal = document.getElementById('introModal');
+        const introBtn = document.getElementById('intro-btn');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        introBtn.onclick = function() {
+            modal.style.display = 'block';
+        }
+
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
